@@ -4,7 +4,8 @@ const multer = require("multer");
 const {
     uploadAndAnalysis,
     getAnalysisHistory,
-    getAnalysisById
+    getAnalysisById,
+    predictTraffic
 } = require("../controllers/analysisController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -26,6 +27,12 @@ router.get(
     "/history",
     authMiddleware,
     getAnalysisHistory
+);
+
+router.post(
+    "/predict",
+    authMiddleware,
+    predictTraffic
 );
 
 router.get(

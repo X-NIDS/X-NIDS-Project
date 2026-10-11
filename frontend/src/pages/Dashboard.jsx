@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
+
 import { Link, useNavigate } from "react-router-dom";
+
 import Navbar from "../components/Navbar";
+
 import api from "../services/api";
+
 
 const Dashboard = () => {
 
@@ -15,6 +19,7 @@ const Dashboard = () => {
 
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
+
 
     const loadHistory = async () => {
 
@@ -44,9 +49,11 @@ const Dashboard = () => {
         }
     };
 
+
     useEffect(() => {
         loadHistory();
     }, []);
+
 
     const handleFileChange = (e) => {
 
@@ -73,6 +80,7 @@ const Dashboard = () => {
 
         setSelectedFile(file);
     };
+
 
     const handleUpload = async () => {
 
@@ -115,9 +123,11 @@ const Dashboard = () => {
 
             setSelectedFile(null);
 
-            document.getElementById(
-                "csvInput"
-            ).value = "";
+            const csvInput = document.getElementById("csvInput");
+
+            if (csvInput) {
+                csvInput.value = "";
+            }
 
             await loadHistory();
 
@@ -143,11 +153,13 @@ const Dashboard = () => {
         }
     };
 
+
     const totalRecords = analyses.reduce(
         (sum, item) =>
             sum + Number(item.total_records || 0),
         0
     );
+
 
     const normalRecords = analyses.reduce(
         (sum, item) =>
@@ -155,22 +167,28 @@ const Dashboard = () => {
         0
     );
 
+
     const attackRecords = analyses.reduce(
         (sum, item) =>
             sum + Number(item.attack_count || 0),
         0
     );
 
+
     return (
+
         <div className="app">
 
             <Navbar />
 
             <main className="dashboard">
 
+                {/* Dashboard Header */}
+
                 <div className="dashboard-header">
 
                     <div>
+
                         <p className="eyebrow">
                             SECURITY MONITORING
                         </p>
@@ -183,14 +201,27 @@ const Dashboard = () => {
                             Analyze network traffic and
                             identify potentially malicious activity.
                         </p>
+
                     </div>
 
-                    <div className="status-badge">
-                        <span></span>
-                        System Online
+                    <div className="dashboard-actions">
+
+                        <Link
+                            to="/predict"
+                            className="primary-btn"
+                        >
+                            Open Traffic Prediction
+                        </Link>
+
+                        <div className="status-badge">
+                            <span></span>
+                            System Online
+                        </div>
+
                     </div>
 
                 </div>
+
 
                 {/* Statistics */}
 
@@ -203,16 +234,12 @@ const Dashboard = () => {
                         </div>
 
                         <div>
-                            <p>
-                                Total Records
-                            </p>
-
-                            <h2>
-                                {totalRecords}
-                            </h2>
+                            <p>Total Records</p>
+                            <h2>{totalRecords}</h2>
                         </div>
 
                     </div>
+
 
                     <div className="stat-card normal">
 
@@ -221,16 +248,12 @@ const Dashboard = () => {
                         </div>
 
                         <div>
-                            <p>
-                                Normal Traffic
-                            </p>
-
-                            <h2>
-                                {normalRecords}
-                            </h2>
+                            <p>Normal Traffic</p>
+                            <h2>{normalRecords}</h2>
                         </div>
 
                     </div>
+
 
                     <div className="stat-card attack">
 
@@ -239,17 +262,12 @@ const Dashboard = () => {
                         </div>
 
                         <div>
-                            <p>
-                                Detected Attacks
-                            </p>
-
-                            <h2>
-                                {attackRecords}
-                            </h2>
-
+                            <p>Detected Attacks</p>
+                            <h2>{attackRecords}</h2>
                         </div>
 
                     </div>
+
 
                     <div className="stat-card">
 
@@ -258,20 +276,16 @@ const Dashboard = () => {
                         </div>
 
                         <div>
-                            <p>
-                                Analyses
-                            </p>
-
-                            <h2>
-                                {analyses.length}
-                            </h2>
+                            <p>Analyses</p>
+                            <h2>{analyses.length}</h2>
                         </div>
 
                     </div>
 
                 </div>
 
-                {/* Upload */}
+
+                {/* CSV Upload */}
 
                 <section className="upload-card">
 
@@ -300,6 +314,7 @@ const Dashboard = () => {
 
                     </div>
 
+
                     <div className="upload-area">
 
                         <input
@@ -313,6 +328,7 @@ const Dashboard = () => {
                             htmlFor="csvInput"
                             className="file-label"
                         >
+
                             <div className="upload-symbol">
                                 ↑
                             </div>
@@ -324,7 +340,9 @@ const Dashboard = () => {
                             <span>
                                 Network traffic dataset
                             </span>
+
                         </label>
+
 
                         {selectedFile && (
 
@@ -336,8 +354,7 @@ const Dashboard = () => {
 
                                 <small>
                                     {(
-                                        selectedFile.size /
-                                        1024
+                                        selectedFile.size / 1024
                                     ).toFixed(1)} KB
                                 </small>
 
@@ -347,11 +364,13 @@ const Dashboard = () => {
 
                     </div>
 
+
                     {message && (
                         <div className="success-message">
                             {message}
                         </div>
                     )}
+
 
                     {error && (
                         <div className="error-message">
@@ -359,13 +378,11 @@ const Dashboard = () => {
                         </div>
                     )}
 
+
                     <button
                         className="primary-btn upload-btn"
                         onClick={handleUpload}
-                        disabled={
-                            uploading ||
-                            !selectedFile
-                        }
+                        disabled={uploading || !selectedFile}
                     >
                         {uploading
                             ? "Analyzing Traffic..."
@@ -374,7 +391,8 @@ const Dashboard = () => {
 
                 </section>
 
-                {/* History */}
+
+                {/* Analysis History */}
 
                 <section className="history-card">
 
@@ -393,6 +411,7 @@ const Dashboard = () => {
                         </div>
 
                     </div>
+
 
                     {loading ? (
 
@@ -413,8 +432,8 @@ const Dashboard = () => {
                             </h3>
 
                             <p>
-                                Upload a network traffic
-                                CSV file to begin your first analysis.
+                                Upload a network traffic CSV file
+                                to begin your first analysis.
                             </p>
 
                         </div>
@@ -439,71 +458,53 @@ const Dashboard = () => {
 
                                 </thead>
 
+
                                 <tbody>
 
-                                    {analyses.map(
-                                        (analysis) => (
+                                    {analyses.map((analysis) => (
 
-                                            <tr
-                                                key={
-                                                    analysis.id
-                                                }
-                                            >
+                                        <tr key={analysis.id}>
 
-                                                <td>
-                                                    #
-                                                    {
-                                                        analysis.id
-                                                    }
-                                                </td>
+                                            <td>
+                                                #{analysis.id}
+                                            </td>
 
-                                                <td className="filename">
-                                                    {
-                                                        analysis.filename
-                                                    }
-                                                </td>
+                                            <td className="filename">
+                                                {analysis.filename}
+                                            </td>
 
-                                                <td>
-                                                    {
-                                                        analysis.total_records
-                                                    }
-                                                </td>
+                                            <td>
+                                                {analysis.total_records}
+                                            </td>
 
-                                                <td className="normal-text">
-                                                    {
-                                                        analysis.normal_count
-                                                    }
-                                                </td>
+                                            <td className="normal-text">
+                                                {analysis.normal_count}
+                                            </td>
 
-                                                <td className="attack-text">
-                                                    {
-                                                        analysis.attack_count
-                                                    }
-                                                </td>
+                                            <td className="attack-text">
+                                                {analysis.attack_count}
+                                            </td>
 
-                                                <td>
-                                                    {
-                                                        new Date(
-                                                            analysis.created_at
-                                                        ).toLocaleString()
-                                                    }
-                                                </td>
+                                            <td>
+                                                {new Date(
+                                                    analysis.created_at
+                                                ).toLocaleString()}
+                                            </td>
 
-                                                <td>
+                                            <td>
 
-                                                    <Link
-                                                        to={`/analysis/${analysis.id}`}
-                                                        className="view-btn"
-                                                    >
-                                                        View
-                                                    </Link>
+                                                <Link
+                                                    to={`/analysis/${analysis.id}`}
+                                                    className="view-btn"
+                                                >
+                                                    View
+                                                </Link>
 
-                                                </td>
+                                            </td>
 
-                                            </tr>
+                                        </tr>
 
-                                        )
-                                    )}
+                                    ))}
 
                                 </tbody>
 
@@ -518,7 +519,9 @@ const Dashboard = () => {
             </main>
 
         </div>
+
     );
 };
+
 
 export default Dashboard;

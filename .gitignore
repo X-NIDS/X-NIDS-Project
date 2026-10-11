@@ -1,4 +1,3 @@
-
 # Dependencies
 node_modules/
 
@@ -26,6 +25,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Ignore datasets and models directories
+# Ignore datasets and trained models
 datasets/
-ml-service/models/
+ml-servises/models/

@@ -9,6 +9,9 @@ const googleClient = new OAuth2Client(
 
 const db = require("../config/db");
 
+// service for ML predictions
+const mlService = require("../services/mlService");
+
 
 // ======================================================
 // UPLOAD CSV AND ANALYZE NETWORK TRAFFIC
@@ -64,7 +67,11 @@ const uploadAndAnalysis = async (req, res) => {
 
         formData.append(
             "file",
-            fs.createReadStream(req.file.path)
+            fs.createReadStream(req.file.path),
+            {
+                filename: req.file.originalname || "traffic.csv",
+                contentType: "text/csv"
+            }
         );
 
 
@@ -457,17 +464,45 @@ const getAnalysisById = async (req, res) => {
 };
 
 
+const predictTraffic = async (req, res) => {
+    try {
+        const { features } = req.body;
+
+        if (
+            !features ||
+            typeof features !== "object" ||
+            Array.isArray(features)
+        ) {
+            return res.status(400).json({
+                message: "Please provide a features object."
+            });
+        }
+
+        const result = await mlService.predict(features);
+
+        return res.status(200).json({
+            success: true,
+            ...result
+        });
+    } catch (error) {
+        console.error("Prediction Controller Error:", error.message);
+
+        return res.status(error.response?.status || 502).json({
+            success: false,
+            message: "Prediction service request failed.",
+            details: error.response?.data?.detail || error.message
+        });
+    }
+};
+
 
 // ======================================================
 // EXPORT CONTROLLERS
 // ======================================================
 
 module.exports = {
-
     uploadAndAnalysis,
-
     getAnalysisHistory,
-
-    getAnalysisById
-
+    getAnalysisById,
+    predictTraffic
 };

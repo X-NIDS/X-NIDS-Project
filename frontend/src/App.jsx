@@ -9,16 +9,13 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AnalysisDetails from "./pages/AnalysisDetails";
+import TrafficPrediction from "./pages/TrafficPrediction";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-
 const App = () => {
-
     return (
-
         <BrowserRouter>
-
             <Routes>
 
                 {/* Default */}
@@ -32,20 +29,17 @@ const App = () => {
                     }
                 />
 
-
                 {/* Login */}
                 <Route
                     path="/login"
                     element={<Login />}
                 />
 
-
                 {/* Registration */}
                 <Route
                     path="/register"
                     element={<Register />}
                 />
-
 
                 {/* Dashboard */}
                 <Route
@@ -57,8 +51,7 @@ const App = () => {
                     }
                 />
 
-
-                {/* Analysis */}
+                {/* Analysis Details */}
                 <Route
                     path="/analysis/:id"
                     element={
@@ -68,11 +61,19 @@ const App = () => {
                     }
                 />
 
-            </Routes>
+                {/* Traffic Prediction */}
+                <Route
+                    path="/predict"
+                    element={
+                        <ProtectedRoute>
+                            <TrafficPrediction />
+                        </ProtectedRoute>
+                    }
+                />
 
+            </Routes>
         </BrowserRouter>
     );
 };
-
 
 export default App;
