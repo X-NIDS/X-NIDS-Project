@@ -25,3 +25,7 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Ignore datasets and models directories
+datasets/
+ml-service/models/
