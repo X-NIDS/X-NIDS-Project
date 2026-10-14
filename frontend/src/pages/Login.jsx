@@ -580,11 +580,10 @@ const Login = () => {
                             <button
                                 type="button"
                                 className="forgot-password"
-                                onClick={() =>
-                                    alert(
-                                        "Password reset will be available soon."
-                                    )
-                                }
+                                onClick={() => {
+                                    setError("");
+                                    navigate("/forgot-password");
+                                }}
                             >
                                 Forgot password?
                             </button>

@@ -10,6 +10,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import AnalysisDetails from "./pages/AnalysisDetails";
 import TrafficPrediction from "./pages/TrafficPrediction";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -69,6 +71,18 @@ const App = () => {
                             <TrafficPrediction />
                         </ProtectedRoute>
                     }
+                />
+
+                {/* Forgot Password */}
+                <Route
+                    path="/forgot-password"
+                    element={<ForgotPassword />}
+                />
+
+                {/* Reset Password */}
+                <Route
+                    path="/reset-password"
+                    element={<ResetPassword />}
                 />
 
             </Routes>

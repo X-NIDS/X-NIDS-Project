@@ -1,5 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const nodemailer = require("nodemailer");
 const { OAuth2Client } = require("google-auth-library");
 
 const db = require("../config/db");
@@ -474,6 +476,216 @@ const googleAuth = async (req, res) => {
     }
 };
 
+// ======================================================
+// FORGOT PASSWORD
+// ======================================================
+
+const forgotPassword = async (req, res) => {
+const genericMessage =
+"If an account exists for that email, a password-reset link will be sent.";
+
+try {
+    const email = String(req.body.email || "")
+        .trim()
+        .toLowerCase();
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({
+            message: "Please enter a valid email address."
+        });
+    }
+
+    const result = await db.query(
+        `SELECT id, email, password_hash
+         FROM users
+         WHERE email = $1`,
+        [email]
+    );
+
+    // Do not disclose whether an account exists.
+    if (
+        result.rows.length === 0 ||
+        !result.rows[0].password_hash
+    ) {
+        return res.status(200).json({
+            message: genericMessage
+        });
+    }
+
+    const user = result.rows[0];
+
+    // Generate a cryptographically secure random token.
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+    // Invalidate any previous unused reset tokens.
+    await db.query(
+        `UPDATE password_reset_tokens
+         SET used_at = NOW()
+         WHERE user_id = $1 AND used_at IS NULL`,
+        [user.id]
+    );
+
+    // Token expires in 15 minutes.
+    await db.query(
+        `INSERT INTO password_reset_tokens
+            (user_id, token_hash, expires_at)
+         VALUES ($1, $2, NOW() + INTERVAL '15 minutes')`,
+        [user.id, tokenHash]
+    );
+
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 465),
+        secure: process.env.SMTP_SECURE === "true",
+        auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS
+        }
+    });
+
+    const resetUrl =
+        `${process.env.FRONTEND_URL}/reset-password` +
+        `?token=${rawToken}`;
+
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_USER,
+            to: user.email,
+            subject: "Reset your X-NIDS password",
+            text:
+                `A password reset was requested for your X-NIDS account.\n\n` +
+                `Use this link within 15 minutes:\n${resetUrl}\n\n` +
+                `If you did not request this, you can ignore this email.`,
+            html: `
+                <h2>Reset your X-NIDS password</h2>
+                <p>A password reset was requested for your account.</p>
+                <p>
+                    <a href="${resetUrl}">Reset Password</a>
+                </p>
+                <p>This link expires in 15 minutes and can only be used once.</p>
+                <p>If you did not request this, you can ignore this email.</p>
+            `
+        });
+    } catch (emailError) {
+        // Invalidate the token if email delivery fails.
+        await db.query(
+            `UPDATE password_reset_tokens
+             SET used_at = NOW()
+             WHERE token_hash = $1 AND used_at IS NULL`,
+            [tokenHash]
+        );
+
+        throw emailError;
+    }
+
+    return res.status(200).json({
+        message: genericMessage
+    });
+} catch (error) {
+    console.error("Forgot password error:", error);
+
+    return res.status(500).json({
+        message: "Unable to process the password-reset request."
+    });
+}
+
+};
+
+// ======================================================
+// RESET PASSWORD
+// ======================================================
+
+const resetPassword = async (req, res) => {
+const { token, password } = req.body;
+
+if (
+    typeof token !== "string" ||
+    typeof password !== "string" ||
+    password.length < 8 ||
+    password.length > 128
+) {
+    return res.status(400).json({
+        message: "A valid reset token and a password of 8–128 characters are required."
+    });
+}
+
+const tokenHash = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
+
+const client = await db.connect();
+
+try {
+    await client.query("BEGIN");
+
+    const result = await client.query(
+        `SELECT id, user_id
+         FROM password_reset_tokens
+         WHERE token_hash = $1
+           AND used_at IS NULL
+           AND expires_at > NOW()
+         FOR UPDATE`,
+        [tokenHash]
+    );
+
+    if (result.rows.length === 0) {
+        await client.query("ROLLBACK");
+
+        return res.status(400).json({
+            message: "This reset link is invalid or has expired. Please request a new one."
+        });
+    }
+
+    const resetRecord = result.rows[0];
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    await client.query(
+        `UPDATE users
+         SET password_hash = $1
+         WHERE id = $2`,
+        [passwordHash, resetRecord.user_id]
+    );
+
+    await client.query(
+        `UPDATE password_reset_tokens
+         SET used_at = NOW()
+         WHERE id = $1`,
+        [resetRecord.id]
+    );
+
+    // Invalidate all other reset links for this user.
+    await client.query(
+        `UPDATE password_reset_tokens
+         SET used_at = NOW()
+         WHERE user_id = $1
+           AND used_at IS NULL`,
+        [resetRecord.user_id]
+    );
+
+    await client.query("COMMIT");
+
+    return res.status(200).json({
+        message: "Password reset successful. Please sign in with your new password."
+    });
+} catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Reset password error:", error);
+
+    return res.status(500).json({
+        message: "Unable to reset your password."
+    });
+} finally {
+    client.release();
+}
+
+};
 
 // ======================================================
 // EXPORT CONTROLLERS
@@ -482,5 +694,7 @@ const googleAuth = async (req, res) => {
 module.exports = {
     register,
     login,
-    googleAuth
+    googleAuth,
+    forgotPassword,
+    resetPassword
 };
